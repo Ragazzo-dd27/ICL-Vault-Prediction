@@ -1,0 +1,20 @@
+# === 忽略系统文件 ===
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# === 忽略数据集 (太大了，传不上去) ===
+data/
+data/public_datasets/
+
+# === 忽略模型权重文件 (几百兆，不要传) ===
+*.pth
+checkpoints/
+
+# === 忽略环境配置和日志 ===
+.env
+logs/
+.vscode/
+
+# === 忽略 Cursor/IDE 缓存 ===
+.cursor/
