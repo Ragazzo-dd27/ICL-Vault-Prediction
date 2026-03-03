@@ -58,30 +58,56 @@ class CrossAttention(nn.Module):
 
 class VaultPredictor(nn.Module):
     """
-    多模态回归模型，包含 CrossAttention 融合 OCT 与 UBM 特征，并与数值分支拼接。
+    多模态回归模型，包含 CrossAttention 融合 OCT 与 UBM 特征，并与数值分支拼接。 
+    支持加载 MCOA 眼科域适应预训练权重，并自动剔除无用fc层。
     """
-    def __init__(self, numeric_in_features=10):
+    def __init__(self, numeric_in_features=10, pretrained_path=None):
+        """
+        :param numeric_in_features: 数值分支输入特征维数
+        :param pretrained_path: 可选，MCOA预训练ResNet权重路径（.pth），如 'checkpoints/resnet18_mcoa_pretrained.pth'
+        """
         super(VaultPredictor, self).__init__()
+
+        # 1. 实例化标准ResNet18骨干
+        resnet = models.resnet18(pretrained=True)
         
-        # OCT 分支
-        resnet_oct = models.resnet18(pretrained=True)
-        self.oct_backbone = nn.Sequential(*list(resnet_oct.children())[:-1])  # (batch, 512, 1, 1)
-        
-        # UBM 分支
-        resnet_ubm = models.resnet18(pretrained=True)
-        self.ubm_backbone = nn.Sequential(*list(resnet_ubm.children())[:-1])  # (batch, 512, 1, 1)
-        
-        # 数值分支
+        # 2. 加载MCOA预训练权重（若提供）
+        if pretrained_path is not None:
+            state = torch.load(pretrained_path, map_location='cpu')
+            if isinstance(state, dict) and 'state_dict' in state:
+                # 兼容有些权重用'checkpoint'格式
+                state_dict = state['state_dict']
+            else:
+                state_dict = state
+
+            # 检查fc层权重并剔除（因为主干的fc与当前任务不一致）
+            fc_keys = [k for k in state_dict if k.startswith("fc.")]
+            for k in fc_keys:
+                del state_dict[k]    # 彻底移除全连接层权重
+            # 加载剩余参数到resnet主干，不要求完全匹配
+            resnet.load_state_dict(state_dict, strict=False)
+            print(f"✅ 成功加载 MCOA 域适应权重: {pretrained_path}")
+        else:
+            print("⚠️ 未指定 MCOA 预训练权重路径，将使用 ImageNet 预训练权重。")
+
+        # 3. 提取去除fc和avgpool后的骨干（除最后两层），适用于特征抽取
+        backbone = nn.Sequential(*list(resnet.children())[:-1])  # (batch, 512, 1, 1)
+
+        # 4. OCT 与 UBM 两个输入分支均共享同一个ResNet主干
+        self.oct_backbone = backbone
+        self.ubm_backbone = nn.Sequential(*list(resnet.children())[:-1])  # 这里两支结构相同，初始化权重一致
+
+        # 5. 数值分支
         self.numeric_branch = nn.Sequential(
             nn.Linear(numeric_in_features, 64),
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU()
         )
-        # Cross-Attention 融合模块 (OCT为Query, UBM为Key/Value)
+        # 6. Cross-Attention 融合模块 (OCT为Query, UBM为Key/Value)
         self.cross_attn = CrossAttention(embed_dim=512, num_heads=4)
 
-        # 回归头：512 (CrossAttn输出) + 128 (numeric) = 640
+        # 7. 回归头：512 (CrossAttn输出) + 128 (numeric) = 640
         self.regression_head = nn.Sequential(
             nn.Linear(512 + 128, 256),
             nn.ReLU(),
@@ -89,7 +115,7 @@ class VaultPredictor(nn.Module):
             nn.ReLU(),
             nn.Linear(64, 1)
         )
-    
+
     def forward(self, oct_img, ubm_img, numeric_feat):
         """
         :param oct_img:       张量，形状 (batch, 3, H, W)（如224x224）
@@ -108,7 +134,6 @@ class VaultPredictor(nn.Module):
         # 3. Cross-Attention 融合
         #    - Query: OCT 特征 (batch, 512)
         #    - Key/Value: UBM 特征 (batch, 512)
-        #    详细维度已在 CrossAttention 注释，seq_len=1。
         ca_fused = self.cross_attn(oct_features, ubm_features, ubm_features)  # (batch, 512)
 
         # 4. 数值分支前向传播

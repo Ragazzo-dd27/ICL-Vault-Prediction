@@ -2,8 +2,12 @@ import torch
 import torch
 from models.multimodal_net import VaultPredictor
 
-# 实例化 VaultPredictor 模型
-model = VaultPredictor()  # 可根据需要调整 numeric_in_features
+# 定义权重路径 (指向你昨晚跑出来的文件)
+ckpt_path = 'checkpoints/resnet18_mcoa_pretrained.pth'
+
+# 实例化模型时传入路径
+print(f"正在尝试加载预训练权重: {ckpt_path}")
+model = VaultPredictor(pretrained_path=ckpt_path)
 
 # 生成假数据（模拟输入）
 batch_size = 4
