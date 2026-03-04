@@ -43,3 +43,32 @@ graph LR
 
     %% 添加注释连接
     G -.->|"OCT引导UBM特征提取"| K["解剖结构对齐"]
+
+## 宏观训练流程图 (Two-Stage Training Pipeline)
+
+```mermaid
+graph TD
+    %% 定义样式
+    classDef dataset fill:#e3f2fd,stroke:#0277bd,stroke-width:2px;
+    classDef process fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    classDef weight fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef final fill:#fce4ec,stroke:#c2185b,stroke-width:3px;
+
+    subgraph Stage1[第一阶段：大规模域适应预训练 (Domain-Adaptive Pre-training)]
+        direction LR
+        A[(MCOA 公开数据集<br>13,328张 AS-OCT)]:::dataset --> B[ResNet18 骨干网络<br>辅助分类任务训练]:::process
+        B --> C{{MCOA 预训练权重<br>Acc: 99.56%}}:::weight
+    end
+
+    subgraph Stage2 [第二阶段：多模态联合微调 (Multi-modal Fine-tuning)]
+        direction LR
+        D[(ICL 临床私有数据<br>OCT + UBM + 数值)]:::dataset --> E[多模态主模型<br>VaultPredictor]:::process
+    end
+
+    %% 连接两个阶段
+    C ==>|权重初始化<br>大脑移植| E
+    
+    %% 第二阶段的详细输出
+    E --> F([模型评估与可视化<br>Bland-Altman / Loss 曲线]):::final
+    F --> G(((最终交付:<br>高精度拱高预测模型))):::final
+```    

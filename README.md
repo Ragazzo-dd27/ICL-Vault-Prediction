@@ -112,6 +112,13 @@
 
 ---
 
+## 📚 理论与设计文档 (Documentation)
+为了更好地理解本项目的数学原理与架构设计，请参考以下独立文档：
+*   **[Problem_Formulation.md](./Problem_Formulation.md)**: 详细阐述了 ICL 拱高预测的数学定义、公式推导及现有方法的局限性分析。
+*   **[architecture_design.md](./architecture_design.md)**: 包含模型宏观训练流程与微观网络架构的 Mermaid 源码及详细说明。
+
+---
+
 ## 📝 实验日志
 
 详细的终端输出记录请查看 `logs/` 文件夹，包含从数据清洗到最终演示的所有关键步骤验证。
