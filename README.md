@@ -1,124 +1,225 @@
-# ICL Vault Prediction Project (基于多模态深度学习的 ICL 术后拱高预测)
+﻿# ICL Vault Prediction Project
 
-## 📌 项目简介
-本项目旨在构建一个高度鲁棒的多模态深度学习回归模型。通过融合 **AS-OCT（光学相干断层扫描）**、**UBM（超声生物显微镜）** 及 **临床数值参数**，利用 **交叉注意力机制（Cross-Attention）** 精准预测 ICL 手术后的拱高（Vault），为医生提供晶体尺寸选型的数字化决策支持。
+## 项目简介
 
-> **当前状态：** 
-> 1. **全链路架构已就绪**：完成 ResNet18 + Cross-Attention 多模态融合模型的工程化实现。
-> 2. **域适应预训练突破**：利用 MCOA 大规模眼科数据集（13,328 张影像）完成主干网络预训练，**分类准确率达到 99.56%**，成功实现从通用视觉向眼科领域的知识迁移。
-> 3. **工程验证通过**：辅助分割模型 (U-Net) 及主回归模型已完成全链路模拟训练，架构稳定性与梯度流验证通过。
+本项目面向 ICL 手术后 Vault（拱高）预测任务，目标是构建一个多模态深度学习研究与工程框架，用于后续融合 OCT、UBM、角膜地形图及临床参数等多源信息，支持模型训练、实验管理与结果复现。
 
----
+当前仓库处于 V2 工程化推进阶段。项目已从早期原型结构逐步迁移到新的 `src/ + scripts/ + data/ + artifacts/` 组织方式，并开始将公开数据实验纳入统一的数据接口、训练入口与评估流程中。
 
-## 🌟 技术亮点 (Technical Highlights)
-*   **域适应策略 (Domain Adaptation)**：针对临床数据稀缺痛点，引入大规模公开数据集进行预热训练，显著提升特征提取器的领域特征捕捉能力。
-*   **交互融合架构**：放弃简单拼接，采用 Cross-Attention 机制实现 OCT 与 UBM 模态间的深层交互，模拟临床“参考扫描引导”的诊断逻辑。
-*   **工程化日志管理**：建立完整的实验追踪体系，所有预训练及集成测试均有详细 Log 记录可供溯源。
+## 项目目标
 
----
+1. 构建面向 ICL 术后 Vault 预测的多模态深度学习框架。
+2. 建立统一的数据 schema、训练入口和实验组织方式。
+3. 为后续真实临床数据接入、训练与实验管理提供稳定的工程基础。
+4. 在工程结构清晰化的前提下，逐步推进主任务与公开数据辅助任务的训练实现。
 
-## 📂 项目结构全景图 (Project Structure)
-*(更新时间: 2026-03-03)*
+## 当前项目状态
 
-    ICL_Vault_Project/
-    │
-    ├── data/                           # 【燃料库】存放数据
-    │   └── public_datasets/            # 公开数据集 (用于预训练)
-    │       ├── keratitis_oct/          # Keratitis AS-OCT 数据集 (用于 U-Net 分割训练)
-    │       └── mcoa_oct/               # [NEW] MCOA 大规模数据集 (13GB, 用于主干网络预训练)
-    │
-    ├── models/                         # 【引擎室】存放神经网络架构
-    │   ├── unet.py                     # [✅已验证] 轻量级 U-Net 分割模型 (用于 UBM 自动 ROI 裁剪)
-    │   └── multimodal_net.py           # [✅已验证] 多模态回归主模型 (支持加载 MCOA 预训练权重)
-    │
-    ├── utils/                          # 【加工厂】存放数据处理工具
-    │   ├── dataset.py                  # [✅已验证] 分割通用加载器 (LabelMe JSON 解析)
-    │   ├── multimodal_dataset.py       # [✅已验证] 多模态模拟数据生成器
-    │   └── mcoa_dataset.py             # [NEW] MCOA 大规模数据递归读取器
-    │
-    ├── checkpoints/                    # 【军火库】存放训练好的模型权重
-    │   ├── unet_keratitis.pth          # U-Net 权重 (Loss: 0.0629)
-    │   ├── resnet18_mcoa_pretrained.pth # [NEW] 域适应主干权重 (MCOA Acc: 99.56%)
-    │   └── multimodal_simulated.pth    # 主模型模拟训练权重
-    │
-    ├── logs/                           # 【档案馆】实验日志
-    │   ├── 20260126_02_unet_training.txt
-    │   ├── 20260303_mcoa_pretrain.txt  # [NEW] 主干网络预训练日志
-    │   ├── 20260303_domain_adaptation_train.txt # [NEW] 域适应集成训练日志
-    │   └── ... (其他历史日志)
-    │
-    ├── pretrain_backbone.py            # [NEW] 主干网络预训练脚本 (MCOA)
-    ├── train_multimodal.py             # [脚本] 主模型全链路训练 (集成域适应权重)
-    ├── train_unet.py                   # [脚本] U-Net 训练
-    ├── inference.py                    # [脚本] U-Net 分割效果可视化
-    ├── demo.py                         # [脚本] 单样本临床预测演示 (System Demo)
-    ├── main.py                         # [脚本] 冒烟测试
-    ├── architecture_design.md          # [文档] Mermaid 架构设计图源码
-    └── GIT_CHEAT_SHEET.md              # [文档] Git 操作备忘录
+### 1. V2 工程骨架
 
----
+当前已建立 V2 主结构，包括：
 
-## 🧩 核心模块与技术亮点
+- `configs/`
+- `data/`
+- `docs/`
+- `scripts/`
+- `src/`
+- `artifacts/`
+- `tests/`
+- `legacy/`
 
-### 1. 域适应预训练 (Domain Adaptation Strategy) 🔥
+V2 的核心目标是将数据接口、训练入口、评估逻辑与实验产物管理逐步从原型式仓库组织方式迁移到更规范的工程结构中。
 
-*   **策略：** 利用 **MCOA (13,328 images)** 大规模眼科数据集进行 Transfer Learning。
-*   **成果：** ResNet18 主干网络在 Pretext Task (Normal vs Opaque) 上达到了 **99.56%** 的准确率。
-*   **意义：** 使特征提取器从“通用视觉模型”进化为“眼科专家模型”，显著解决了 ICL 小样本训练易过拟合的问题。
+### 2. 主任务 Vault 线
 
-### 2. 主预测模型 (Main Prediction Pipeline)
+主任务目前仍处于 scaffold 阶段，但基础工程链路已经打通，已完成的组件包括：
 
-*   **架构：** 双流 ResNet18 (Initialized with MCOA weights) + MLP (Clinical) -> **Cross-Attention Fusion** -> Regression Head。
-*   **验证：** 成功加载 MCOA 权重，并通过全链路模拟训练验证，梯度回传正常，Loss 收敛符合预期。
+- `src/icl_vault/data/schema.py`
+- `src/icl_vault/data/datasets/vault_dataset.py`
+- `src/icl_vault/data/collate.py`
+- `scripts/train_vault.py`
+- `src/icl_vault/engine/trainer.py`
 
-### 3. 辅助模块 (Auxiliary Pipeline)
+当前状态说明：
 
-*   **功能：** 基于 Lightweight U-Net 实现图像 ROI 自动裁剪。
-*   **验证：** 在 Keratitis 数据集上验证通过 (Loss 0.06)。
+- 已定义主任务样本字段结构
+- 已实现 manifest 驱动的 `VaultDataset`
+- 已实现 metadata-based 的 batch collate
+- 已有 V2 训练入口与 trainer scaffold
+- 目前尚未接入真实多模态主模型训练
 
----
+### 3. MCOA 预训练线
 
-## 📅 项目进度追踪 (Milestones)
+MCOA 公开数据预训练线已经成为当前仓库中第一条真实可训练路径，已完成的组件包括：
 
-- [x] **环境搭建**: PyTorch + CUDA 环境配置完成。
-- [x] **架构复现**: 完成 ResNet + Cross-Attention 多模态融合网络搭建。
-- [x] **数据工程**: 攻克 LabelMe JSON 解析及 MCOA 大规模数据读取。
-- [x] **辅助模型落地**: U-Net 训练完成 (Loss 0.06)，具备 ROI 提取能力。
-- [x] **域适应预训练**: **完成 ResNet 主干在 MCOA 数据集上的预训练 (Acc 99.56%)。**
-- [x] **全链路集成**: **完成基于 MCOA 权重的主模型集成训练，验证了 Domain Adaptation 的有效性。**
-- [ ] **实战迁移**: 接入爱尔眼科真实 UBM 数据，微调 U-Net。
-- [ ] **真实训练**: 替换模拟数据，启动主模型在真实数据上的训练。
+- manifest 驱动数据组织
+- `src/icl_vault/data/datasets/mcoa_dataset.py`
+- `scripts/pretrain_backbone.py`
+- `src/icl_vault/engine/evaluator.py`
+- `src/icl_vault/engine/checkpoint.py`
 
----
+当前能力包括：
 
-## 🚀 快速指令 (Quick Start)
+- 从 manifest 读取真实 MCOA 图像样本
+- 显式标签映射，不再依赖目录名推断
+- 基于 `torchvision.models.resnet18` 的最小分类训练流程
+- 输出基础指标：`train_loss`、`val_loss`、`val_accuracy`
+- 在 `artifacts/checkpoints/` 下保存最小 checkpoint
 
-### 1. 演示原型系统 (Demo)
+## 小样本 MCOA 初步实验结论
 
-模拟输入一位患者的临床数据，输出预测报告：
+基于小规模 manifest，当前已完成三组对比实验：
 
-    python demo.py
+1. from scratch + no augmentation
+2. ImageNet pretrained + no augmentation
+3. ImageNet pretrained + basic augmentation
 
-### 2. 查看 U-Net 分割效果 (Visualization)
+当前阶段的结论是：
 
-随机抽取测试集图片，展示 原图 vs 真值 vs 预测：
+- ImageNet 预训练权重是当前小样本场景下的主要收益来源。
+- 在 ImageNet 预训练基础上加入 basic augmentation 后，训练与验证过程进一步稳定。
 
-    python inference.py
+更详细的实验记录见：
 
-### 3. 运行训练脚本
+- `docs/experiments/mcoa_pretrain_ablation_log.md`
 
-    python train_unet.py       # 训练 U-Net
-    python train_multimodal.py # 训练主模型 (模拟数据)
+## 当前目录结构
 
----
+```text
+ICL_Vault_Project/
+├─ configs/
+├─ data/
+│  ├─ manifests/
+│  ├─ processed/
+│  ├─ raw/
+│  ├─ interim/
+│  └─ splits/
+├─ docs/
+│  ├─ experiments/
+│  └─ V2_REFACTOR_PLAN.md
+├─ scripts/
+│  ├─ pretrain_backbone.py
+│  ├─ train_vault.py
+│  ├─ train_segmentation.py
+│  ├─ infer_vault.py
+│  └─ infer_segmentation.py
+├─ src/
+│  └─ icl_vault/
+│     ├─ data/
+│     ├─ engine/
+│     ├─ models/
+│     └─ utils/
+├─ artifacts/
+│  ├─ checkpoints/
+│  ├─ figures/
+│  ├─ logs/
+│  └─ predictions/
+├─ legacy/
+├─ tests/
+├─ requirements.txt
+└─ README.md
+```
 
-## 📚 理论与设计文档 (Documentation)
-为了更好地理解本项目的数学原理与架构设计，请参考以下独立文档：
-*   **[Problem_Formulation.md](./Problem_Formulation.md)**: 详细阐述了 ICL 拱高预测的数学定义、公式推导及现有方法的局限性分析。
-*   **[architecture_design.md](./architecture_design.md)**: 包含模型宏观训练流程与微观网络架构的 Mermaid 源码及详细说明。
+## 主要模块说明
 
----
+### `src/icl_vault/data/`
 
-## 📝 实验日志
+负责 V2 数据接口层，包括：
 
-详细的终端输出记录请查看 `logs/` 文件夹，包含从数据清洗到最终演示的所有关键步骤验证。
+- 数据 schema
+- manifest 驱动的数据集定义
+- batch collate
+- 后续可扩展的数据变换与数据组织逻辑
+
+### `src/icl_vault/engine/`
+
+负责 V2 训练与评估引擎层，包括：
+
+- `trainer.py`：训练流程 scaffold
+- `evaluator.py`：当前最小分类评估器
+- `checkpoint.py`：最小 checkpoint 保存工具
+- `logger.py`：日志工具占位
+
+### `scripts/`
+
+负责各项实验的顶层运行入口。当前主要包括：
+
+- `pretrain_backbone.py`：MCOA 预训练实验入口
+- `train_vault.py`：Vault 主任务训练入口 scaffold
+- 其余脚本仍处于骨架或占位阶段
+
+### `docs/`
+
+负责记录：
+
+- V2 重构方案
+- 实验记录
+- 后续可补充的方法设计与实验总结
+
+### `legacy/`
+
+用于归档旧版 V1 / 原型阶段脚本、文档与产物。当前主开发应以 V2 结构为准，不再以旧版根目录脚本作为主要维护入口。
+
+## 当前可运行内容
+
+当前仓库中最明确、最完整的可运行路径是：MCOA 小规模公开数据预训练实验。
+
+示例命令：
+
+```bash
+python scripts/pretrain_backbone.py --manifest_path data/manifests/mcoa_manifest_small.csv --epochs 5
+```
+
+使用 ImageNet 预训练权重的对比命令：
+
+```bash
+python scripts/pretrain_backbone.py --manifest_path data/manifests/mcoa_manifest_small.csv --epochs 5 --use_imagenet_pretrain
+```
+
+如果希望复现实验中的保守增强版本，可直接使用当前脚本默认配置。当前训练脚本已在 train transform 中启用基础且保守的数据增强。
+
+## Checkpoint 说明
+
+当前 MCOA 训练线会在 `artifacts/checkpoints/` 下保存：
+
+- `mcoa_latest.pth`
+- `mcoa_best.pth`
+
+其中：
+
+- `mcoa_latest.pth`：每个 epoch 结束后更新
+- `mcoa_best.pth`：按当前 `val_accuracy` 最优结果更新
+
+## 当前限制
+
+1. 主任务真实临床数据尚未完全到位。
+2. Vault 主任务仍以 scaffold 为主，尚未完成真实多模态训练闭环。
+3. 当前公开数据实验规模仍偏小。
+4. 当前结论主要用于工程验证与初步观察，尚不能替代更大规模实验结论。
+5. 训练引擎、评估器与 checkpoint 机制仍处于最小实现阶段。
+
+## 下一步计划
+
+1. 扩展更大规模的 MCOA manifest。
+2. 继续比较 scratch / ImageNet pretrained / augmentation 三组设置。
+3. 将主任务 Vault 线从 scaffold 推进到真实训练路径。
+4. 逐步接入真实临床数据。
+5. 继续完善 trainer / evaluator / checkpoint 等 V2 engine 组件。
+
+## Legacy 说明
+
+旧版 V1 / 原型脚本、旧文档与旧产物已逐步归档到 `legacy/`：
+
+- `legacy/scripts_v1/`
+- `legacy/docs_v1/`
+- `legacy/artifacts_v1/`
+- `legacy/notes_v1/`
+
+当前主开发与后续工程推进应以 V2 结构为准，即优先使用：
+
+- `scripts/`
+- `src/icl_vault/`
+- `data/manifests/`
+- `artifacts/`
+
+而不是继续在旧版根目录原型脚本上叠加新逻辑。
