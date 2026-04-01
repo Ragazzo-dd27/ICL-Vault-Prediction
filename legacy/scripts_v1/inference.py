@@ -17,7 +17,7 @@ print(f"Using device: {device}")
 
 # 2. 加载模型结构与权重
 model = LightweightUNet()
-model.load_state_dict(torch.load('unet_keratitis.pth', map_location=device))
+model.load_state_dict(torch.load('checkpoints/unet_keratitis.pth', map_location=device))
 model.to(device)
 model.eval()
 
