@@ -211,6 +211,8 @@ python scripts/pretrain_backbone.py --manifest_path data/manifests/mcoa_manifest
 旧版 V1 / 原型脚本、旧文档与旧产物已逐步归档到 `legacy/`：
 
 - `legacy/scripts_v1/`
+- `legacy/models_v1/`
+- `legacy/utils_v1/`
 - `legacy/docs_v1/`
 - `legacy/artifacts_v1/`
 - `legacy/notes_v1/`
