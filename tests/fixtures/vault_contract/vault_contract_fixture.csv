@@ -1,0 +1,3 @@
+sample_id,patient_id,eye_side,oct_path,ubm_path,topography_path,vault_label,split,device_oct,device_ubm,has_oct,has_ubm,has_topography
+FIXTURE_001,FIXTURE_PATIENT_001,R,oct_sample_001.ppm,ubm_sample_001.ppm,topography_sample_001.csv,512.0,train,CASIA-2,SW-3200L,1,1,1
+FIXTURE_002,FIXTURE_PATIENT_002,L,oct_sample_002.ppm,,topography_sample_002.csv,438.5,train,ANTERION,,1,0,1

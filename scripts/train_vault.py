@@ -123,10 +123,12 @@ def main() -> None:
     # Placeholder flow to prove the entrypoint can build and inspect one batch.
     train_batch = next(iter(train_loader), None)
     val_batch = next(iter(val_loader), None)
-    print(f"Preview train batch size: {len(train_batch['sample_id']) if train_batch is not None else 0}")
-    print(f"Preview val batch size: {len(val_batch['sample_id']) if val_batch is not None else 0}")
+    print(f"Preview train batch size: {len(train_batch['meta']['sample_id']) if train_batch is not None else 0}")
+    print(f"Preview val batch size: {len(val_batch['meta']['sample_id']) if val_batch is not None else 0}")
     print(f"Preview train batch keys: {list(train_batch.keys()) if train_batch is not None else []}")
     print(f"Preview val batch keys: {list(val_batch.keys()) if val_batch is not None else []}")
+    print(f"Preview train tensor shapes: {train_batch['tensor_shapes'] if train_batch is not None else {}}")
+    print(f"Preview val tensor shapes: {val_batch['tensor_shapes'] if val_batch is not None else {}}")
 
     trainer = Trainer(
         model=None,
