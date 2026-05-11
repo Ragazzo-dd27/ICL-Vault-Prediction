@@ -17,4 +17,13 @@ logs/
 .vscode/
 
 # === 忽略 Cursor/IDE 缓存 ===
-.cursor/
+.cursor/data/raw/
+data/interim/
+data/manifests/*batch_01*
+data/splits/*batch_01*
+artifacts/checkpoints/
+artifacts/logs/
+artifacts/predictions/
+artifacts/figures/casia2_measurement_crops*/
+*.zip
+*patient_mapping_private*
