@@ -27,3 +27,4 @@ artifacts/predictions/
 artifacts/figures/casia2_measurement_crops*/
 *.zip
 *patient_mapping_private*
+artifacts/figures/real_multimodal_example*.png
