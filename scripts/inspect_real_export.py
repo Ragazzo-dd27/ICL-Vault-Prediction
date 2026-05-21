@@ -30,6 +30,7 @@ from PIL import Image, ImageDraw, ImageOps
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp"}
 PATIENT_UID_PATTERN = re.compile(r"^patient_\d+$", re.IGNORECASE)
+PATIENT_UID_PREFIX_PATTERN = re.compile(r"^(patient_\d+)(?:\b|_)", re.IGNORECASE)
 OCT_FILENAME_PATTERN = re.compile(
     r"^(?P<exam_id>\d+)_(?P<date>\d{8})_(?P<time>\d{6})_(?P<eye>[A-Za-z]+)",
     re.IGNORECASE,
@@ -171,6 +172,11 @@ def warn_if_common_patient_dir_typo(raw_root: Path) -> None:
 def assign_patient_uid(folder_name: str, index: int) -> str:
     if PATIENT_UID_PATTERN.match(folder_name):
         return folder_name.lower()
+    # Batch-specific exports should remain independent before any merge. If a
+    # folder has an anonymized prefix plus a suffix, keep the anonymized UID.
+    prefix_match = PATIENT_UID_PREFIX_PATTERN.match(folder_name)
+    if prefix_match:
+        return prefix_match.group(1).lower()
     return f"patient_{index:03d}"
 
 

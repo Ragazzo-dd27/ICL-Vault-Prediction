@@ -28,3 +28,6 @@ artifacts/figures/casia2_measurement_crops*/
 *.zip
 *patient_mapping_private*
 artifacts/figures/real_multimodal_example*.png
+data/manifests/*batch*
+data/manifests/*combined*
+artifacts/reports/

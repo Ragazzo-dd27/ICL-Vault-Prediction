@@ -33,6 +33,7 @@ OCT_FILENAME_PATTERN = re.compile(
     r"^(?P<exam_id>\d+)_(?P<date>\d{8})_(?P<time>\d{6})_(?P<eye>[A-Za-z]+)",
     re.IGNORECASE,
 )
+PATIENT_UID_PREFIX_PATTERN = re.compile(r"^(patient_\d+)(?:\b|_)", re.IGNORECASE)
 MEASUREMENT_PATTERNS = {
     "cct_um": re.compile(r"CCT\s*(?:\[[^\]]+\])?\s*[:=]?\s*(\d+(?:\.\d+)?)", re.IGNORECASE),
     "acd_epi_mm": re.compile(r"ACD\s*\[?\s*Epi\.?\s*\]?\s*[:=]?\s*(\d+(?:\.\d+)?)", re.IGNORECASE),
@@ -188,6 +189,11 @@ def classify_image(path: Path) -> str:
 def resolve_patient_uid(folder_name: str, index: int) -> str:
     if re.match(r"^patient_\d+$", folder_name, flags=re.IGNORECASE):
         return folder_name.lower()
+    # Batch-specific exports should be processed independently before any merge.
+    # Preserve anonymized patient_NNN prefixes when a folder has a suffix.
+    prefix_match = PATIENT_UID_PREFIX_PATTERN.match(folder_name)
+    if prefix_match:
+        return prefix_match.group(1).lower()
     return f"patient_{index:03d}"
 
 
