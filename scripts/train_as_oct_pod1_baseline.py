@@ -24,6 +24,7 @@ SRC_ROOT = PROJECT_ROOT / "src"
 CHECKPOINT_DIR = PROJECT_ROOT / "artifacts/checkpoints/as_oct_pod1_baseline_batch_01"
 LOG_DIR = PROJECT_ROOT / "artifacts/logs/as_oct_pod1_baseline_batch_01"
 PREDICTION_DIR = PROJECT_ROOT / "artifacts/predictions/as_oct_pod1_baseline_batch_01"
+REPORT_DIR = PROJECT_ROOT / "artifacts/reports/as_oct_pod1_baseline_batch_01"
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,6 +47,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--freeze_backbone", action="store_true", default=False)
     parser.add_argument("--label_normalize", dest="label_normalize", action="store_true", default=True)
     parser.add_argument("--no_label_normalize", dest="label_normalize", action="store_false")
+    parser.add_argument(
+        "--loss_weight_mode",
+        choices=["none", "vault_range"],
+        default="none",
+        help="Optional training loss weighting. Default keeps the original unweighted MSE behavior.",
+    )
+    parser.add_argument("--low_threshold", type=float, default=500.0)
+    parser.add_argument("--high_threshold", type=float, default=800.0)
+    parser.add_argument("--low_weight", type=float, default=2.0)
+    parser.add_argument("--medium_weight", type=float, default=1.0)
+    parser.add_argument("--high_weight", type=float, default=1.0)
     parser.add_argument("--run_name", type=str, default="as_oct_pod1_clean_resnet18")
     return parser.parse_args()
 
@@ -80,6 +92,11 @@ def resolve_project_path(value: str) -> Path:
 def run_output_dirs(run_name: str) -> Tuple[Path, Path, Path]:
     run_name = run_name.strip() or "as_oct_pod1_clean_resnet18"
     return CHECKPOINT_DIR / run_name, LOG_DIR / run_name, PREDICTION_DIR / run_name
+
+
+def run_report_dir(run_name: str) -> Path:
+    run_name = run_name.strip() or "as_oct_pod1_clean_resnet18"
+    return REPORT_DIR / run_name
 
 
 def set_seed(torch_module: Any, seed: int) -> None:
@@ -135,6 +152,20 @@ def compute_label_stats(df: pd.DataFrame) -> Dict[str, float]:
         "std": label_std,
         "min": float(train_labels.min()),
         "max": float(train_labels.max()),
+    }
+
+
+def compute_vault_range_counts(
+    df: pd.DataFrame,
+    split: str,
+    low_threshold: float,
+    high_threshold: float,
+) -> Dict[str, int]:
+    labels = pd.to_numeric(df.loc[df["split"] == split, "vault_label"], errors="coerce").dropna()
+    return {
+        "low": int((labels < low_threshold).sum()),
+        "medium": int(((labels >= low_threshold) & (labels <= high_threshold)).sum()),
+        "high": int((labels > high_threshold).sum()),
     }
 
 
@@ -207,6 +238,24 @@ def get_batch_inputs(batch: Dict[str, Any], device: Any) -> Tuple[Any, Any]:
     return oct_images.to(device), vault_labels.to(device)
 
 
+def weighted_mse_loss(
+    torch_module: Any,
+    squared_error: Any,
+    labels_um: Any,
+    args: argparse.Namespace,
+) -> Any:
+    """Compute optional vault-range weighted MSE on normalized squared errors."""
+    if args.loss_weight_mode == "none":
+        return torch_module.mean(squared_error)
+    if args.loss_weight_mode != "vault_range":
+        raise ValueError(f"Unsupported loss_weight_mode: {args.loss_weight_mode}")
+
+    weights = torch_module.full_like(labels_um, float(args.medium_weight))
+    weights = torch_module.where(labels_um < args.low_threshold, torch_module.full_like(weights, float(args.low_weight)), weights)
+    weights = torch_module.where(labels_um > args.high_threshold, torch_module.full_like(weights, float(args.high_weight)), weights)
+    return torch_module.sum(weights * squared_error) / torch_module.clamp(torch_module.sum(weights), min=1e-8)
+
+
 def train_one_epoch(
     torch_module: Any,
     model: Any,
@@ -217,6 +266,7 @@ def train_one_epoch(
     label_mean: float,
     label_std: float,
     label_normalize: bool,
+    args: argparse.Namespace,
 ) -> Dict[str, float]:
     model.train()
     total_loss = 0.0
@@ -229,7 +279,8 @@ def train_one_epoch(
         targets = normalize(labels_um, label_mean, label_std, label_normalize)
         optimizer.zero_grad(set_to_none=True)
         outputs = model(oct_images).squeeze(1)
-        loss = criterion(outputs, targets)
+        squared_error = (outputs - targets) ** 2
+        loss = weighted_mse_loss(torch_module, squared_error, labels_um, args)
         if torch_module.isnan(loss):
             raise ValueError("NaN loss encountered during training.")
         loss.backward()
@@ -310,6 +361,71 @@ def evaluate(
     return metrics, pd.DataFrame(rows)
 
 
+def range_metrics_from_predictions(
+    predictions: pd.DataFrame,
+    split: str,
+    low_threshold: float,
+    high_threshold: float,
+) -> pd.DataFrame:
+    if predictions.empty:
+        return pd.DataFrame()
+    df = predictions.copy()
+    df["vault_label_um"] = pd.to_numeric(df["vault_label_um"], errors="coerce")
+    df["pred_vault_um"] = pd.to_numeric(df["pred_vault_um"], errors="coerce")
+    df["signed_error_um"] = df["pred_vault_um"] - df["vault_label_um"]
+    df["abs_error_um"] = df["signed_error_um"].abs()
+    df["vault_range"] = "medium"
+    df.loc[df["vault_label_um"] < low_threshold, "vault_range"] = "low"
+    df.loc[df["vault_label_um"] > high_threshold, "vault_range"] = "high"
+
+    rows: List[Dict[str, Any]] = []
+    for vault_range in ["low", "medium", "high"]:
+        sub = df[df["vault_range"] == vault_range]
+        if sub.empty:
+            rows.append(
+                {
+                    "split": split,
+                    "vault_range": vault_range,
+                    "n_samples": 0,
+                    "mae_um": float("nan"),
+                    "rmse_um": float("nan"),
+                    "mean_signed_error_um": float("nan"),
+                    "median_abs_error_um": float("nan"),
+                    "overestimation_count": 0,
+                    "underestimation_count": 0,
+                }
+            )
+            continue
+        rows.append(
+            {
+                "split": split,
+                "vault_range": vault_range,
+                "n_samples": int(len(sub)),
+                "mae_um": float(sub["abs_error_um"].mean()),
+                "rmse_um": float((sub["signed_error_um"] ** 2).mean() ** 0.5),
+                "mean_signed_error_um": float(sub["signed_error_um"].mean()),
+                "median_abs_error_um": float(sub["abs_error_um"].median()),
+                "overestimation_count": int((sub["signed_error_um"] > 0).sum()),
+                "underestimation_count": int((sub["signed_error_um"] < 0).sum()),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def print_range_metrics(range_metrics: pd.DataFrame, split: str) -> None:
+    sub = range_metrics[range_metrics["split"] == split]
+    if sub.empty:
+        return
+    for _, row in sub.iterrows():
+        if int(row["n_samples"]) == 0:
+            print(f"{split} {row['vault_range']} MAE: n=0")
+        else:
+            print(
+                f"{split} {row['vault_range']} MAE: "
+                f"{row['mae_um']:.2f} um (n={int(row['n_samples'])})"
+            )
+
+
 def save_checkpoint(
     torch_module: Any,
     path: Path,
@@ -373,6 +489,22 @@ def print_start_summary(
     print(f"Pretrained: {args.pretrained}")
     print(f"Freeze backbone: {args.freeze_backbone}")
     print(f"Label normalize: {args.label_normalize}")
+    train_counts = compute_vault_range_counts(
+        manifest_df,
+        split="train",
+        low_threshold=args.low_threshold,
+        high_threshold=args.high_threshold,
+    )
+    print(f"Loss weight mode: {args.loss_weight_mode}")
+    print(
+        "Vault range thresholds/weights: "
+        f"low < {args.low_threshold:.1f}, high > {args.high_threshold:.1f}; "
+        f"weights low={args.low_weight:.2f}, medium={args.medium_weight:.2f}, high={args.high_weight:.2f}"
+    )
+    print(
+        "Train vault range counts: "
+        f"low={train_counts['low']}, medium={train_counts['medium']}, high={train_counts['high']}"
+    )
 
 
 def main() -> None:
@@ -404,12 +536,14 @@ def main() -> None:
     criterion = nn.MSELoss()
 
     checkpoint_dir, log_dir, prediction_dir = run_output_dirs(args.run_name)
+    report_dir = run_report_dir(args.run_name)
     latest_path = checkpoint_dir / "latest.pth"
     best_path = checkpoint_dir / "best.pth"
     log_path = log_dir / "train_log.csv"
     val_predictions_path = prediction_dir / "val_predictions.csv"
     test_predictions_path = prediction_dir / "test_predictions.csv"
-    for path in (latest_path, best_path, log_path, val_predictions_path, test_predictions_path):
+    range_metrics_path = report_dir / "range_metrics.csv"
+    for path in (latest_path, best_path, log_path, val_predictions_path, test_predictions_path, range_metrics_path):
         path.parent.mkdir(parents=True, exist_ok=True)
     if log_path.exists():
         log_path.unlink()
@@ -437,6 +571,7 @@ def main() -> None:
             label_mean=label_stats["mean"],
             label_std=label_stats["std"],
             label_normalize=args.label_normalize,
+            args=args,
         )
         val_metrics, _ = evaluate(
             torch_module=torch,
@@ -460,6 +595,15 @@ def main() -> None:
             "val_rmse_um": val_metrics["rmse"],
             "val_r2": val_metrics["r2"],
             "lr": lr,
+            "loss_weight_mode": args.loss_weight_mode,
+            "low_threshold": args.low_threshold,
+            "high_threshold": args.high_threshold,
+            "low_weight": args.low_weight,
+            "medium_weight": args.medium_weight,
+            "high_weight": args.high_weight,
+            "train_low_count": compute_vault_range_counts(manifest_df, "train", args.low_threshold, args.high_threshold)["low"],
+            "train_medium_count": compute_vault_range_counts(manifest_df, "train", args.low_threshold, args.high_threshold)["medium"],
+            "train_high_count": compute_vault_range_counts(manifest_df, "train", args.low_threshold, args.high_threshold)["high"],
         }
         write_log_row(log_path, log_row, write_header=(epoch == 1))
         save_checkpoint(
@@ -525,6 +669,20 @@ def main() -> None:
     )
     val_predictions.to_csv(val_predictions_path, index=False, encoding="utf-8")
     test_predictions.to_csv(test_predictions_path, index=False, encoding="utf-8")
+    val_range_metrics = range_metrics_from_predictions(
+        val_predictions,
+        split="val",
+        low_threshold=args.low_threshold,
+        high_threshold=args.high_threshold,
+    )
+    test_range_metrics = range_metrics_from_predictions(
+        test_predictions,
+        split="test",
+        low_threshold=args.low_threshold,
+        high_threshold=args.high_threshold,
+    )
+    range_metrics = pd.concat([val_range_metrics, test_range_metrics], ignore_index=True)
+    range_metrics.to_csv(range_metrics_path, index=False, encoding="utf-8")
 
     print("Training complete")
     print(f"Best epoch: {best_epoch}")
@@ -535,11 +693,19 @@ def main() -> None:
         f"RMSE={test_metrics['rmse']:.2f} um, "
         f"R2={test_metrics['r2']:.4f}"
     )
+    print(f"Overall val MAE: {val_metrics['mae']:.2f} um")
+    print(f"Overall test MAE: {test_metrics['mae']:.2f} um")
+    print_range_metrics(range_metrics, split="val")
+    print_range_metrics(range_metrics, split="test")
+    low_test = range_metrics[(range_metrics["split"] == "test") & (range_metrics["vault_range"] == "low")]
+    if not low_test.empty and int(low_test.iloc[0]["n_samples"]) > 0:
+        print(f"Low-vault test mean signed error: {low_test.iloc[0]['mean_signed_error_um']:.2f} um")
     print(f"Latest checkpoint: {latest_path.relative_to(PROJECT_ROOT).as_posix()}")
     print(f"Best checkpoint: {best_path.relative_to(PROJECT_ROOT).as_posix()}")
     print(f"Train log: {log_path.relative_to(PROJECT_ROOT).as_posix()}")
     print(f"Val predictions: {val_predictions_path.relative_to(PROJECT_ROOT).as_posix()}")
     print(f"Test predictions: {test_predictions_path.relative_to(PROJECT_ROOT).as_posix()}")
+    print(f"Range metrics: {range_metrics_path.relative_to(PROJECT_ROOT).as_posix()}")
 
 
 if __name__ == "__main__":
