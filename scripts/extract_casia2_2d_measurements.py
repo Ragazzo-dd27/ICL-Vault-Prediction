@@ -168,7 +168,7 @@ def parse_filename_metadata(path: Path) -> Dict[str, str]:
 
 def is_2d_analysis_path(path: Path) -> bool:
     joined = " ".join(part.lower() for part in path.parts)
-    return any(keyword in joined for keyword in ("2danalysis", "2d_analysis", "2d", "analysis"))
+    return any(keyword in joined for keyword in ("2danalysis", "2d_analysis", "2d analysis"))
 
 
 def classify_image(path: Path) -> str:
@@ -195,6 +195,27 @@ def resolve_patient_uid(folder_name: str, index: int) -> str:
     if prefix_match:
         return prefix_match.group(1).lower()
     return f"patient_{index:03d}"
+
+
+def resolve_patient_root(raw_root: Path) -> Path:
+    """Support exports with patient folders directly or under patient/patients."""
+
+    direct_patient_dirs = [
+        path for path in raw_root.iterdir() if path.is_dir() and PATIENT_UID_PREFIX_PATTERN.match(path.name)
+    ]
+    if direct_patient_dirs:
+        return raw_root
+
+    for container_name in ("patient", "patients"):
+        container = raw_root / container_name
+        if container.is_dir():
+            nested_patient_dirs = [
+                path for path in container.iterdir() if path.is_dir() and PATIENT_UID_PREFIX_PATTERN.match(path.name)
+            ]
+            if nested_patient_dirs:
+                return container
+
+    return raw_root
 
 
 def parse_manifest_paths(manifest_in: Path, raw_root: Path) -> List[Path]:
@@ -245,7 +266,8 @@ def discover_2d_analysis_paths(raw_root: Path, manifest_in: Path) -> List[Path]:
 
 def assign_patient_uids(raw_root: Path) -> Dict[str, str]:
     mapping: Dict[str, str] = {}
-    patient_dirs = sorted(path for path in raw_root.iterdir() if path.is_dir())
+    patient_root = resolve_patient_root(raw_root)
+    patient_dirs = sorted(path for path in patient_root.iterdir() if path.is_dir())
     for index, patient_dir in enumerate(patient_dirs, start=1):
         mapping[patient_dir.name] = resolve_patient_uid(patient_dir.name, index)
     return mapping
@@ -550,16 +572,17 @@ def main() -> None:
     if not raw_root.exists():
         raise FileNotFoundError(f"Raw export root does not exist: {raw_root}")
     warn_if_common_patient_dir_typo(raw_root)
+    patient_root = resolve_patient_root(raw_root)
 
     patient_uid_map = assign_patient_uids(raw_root)
-    image_counts = count_images_by_modality(raw_root)
-    paths = discover_2d_analysis_paths(raw_root=raw_root, manifest_in=manifest_in)
-    base_rows = build_base_rows(paths=paths, raw_root=raw_root, patient_uid_map=patient_uid_map)
+    image_counts = count_images_by_modality(patient_root)
+    paths = discover_2d_analysis_paths(raw_root=patient_root, manifest_in=manifest_in)
+    base_rows = build_base_rows(paths=paths, raw_root=patient_root, patient_uid_map=patient_uid_map)
     assign_visit_roles(base_rows)
     measurement_records = enrich_measurements(
         base_rows,
         crop_dir=crop_dir,
-        raw_root=raw_root,
+        raw_root=patient_root,
         enable_ocr=args.enable_ocr,
     )
     label_candidates = build_label_candidates(measurement_records)

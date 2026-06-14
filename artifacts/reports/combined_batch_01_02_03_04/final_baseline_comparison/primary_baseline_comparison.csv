@@ -1,0 +1,4 @@
+model,input,evaluation_variant,n_train,n_val,n_test,MAE,RMSE,R2,mean_signed_error,prediction_range_ratio
+Measurement RF,Preoperative measurements,primary seed42 Random Forest,228,48,49,169.4441111803163,227.50426681053116,0.2374043669395605,-4.703396015549116,0.3421844562539818
+Corrected AS-OCT,AS-OCT image,primary corrected 3-seed ensemble,241,51,51,178.45748063629753,242.8198916350351,0.1160629525478444,-56.43619133444394,0.3097886151540738
+Fusion,AS-OCT image + preoperative measurements,primary 3-seed ensemble,227,48,49,182.7969835761453,241.8677412209466,0.1380717419093465,-51.664825439453104,0.3225747406426819

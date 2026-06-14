@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{Range-specific MAE across repeated patient-level splits.}
+\label{tab:range_metrics}
+\begin{tabular}{lrrr}
+\toprule
+Model & Low MAE & Medium MAE & High MAE \\
+\midrule
+Measurement RF & 172.57 $\pm$ 32.83 & 90.07 $\pm$ 15.49 & 364.70 $\pm$ 48.50 \\
+Corrected AS-OCT & 174.50 $\pm$ 27.69 & 98.30 $\pm$ 15.29 & 381.19 $\pm$ 105.98 \\
+Fusion & 162.50 $\pm$ 31.86 & 103.90 $\pm$ 9.20 & 393.24 $\pm$ 86.57 \\
+\bottomrule
+\end{tabular}
+\footnotesize Vault ranges are low ($<500$~um), medium (500--800~um), and high ($>800$~um). Values are mean $\pm$ sample SD across repeated splits.
+\end{table}

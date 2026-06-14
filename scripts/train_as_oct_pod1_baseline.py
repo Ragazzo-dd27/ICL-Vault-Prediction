@@ -59,6 +59,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--medium_weight", type=float, default=1.0)
     parser.add_argument("--high_weight", type=float, default=1.0)
     parser.add_argument("--run_name", type=str, default="as_oct_pod1_clean_resnet18")
+    parser.add_argument("--checkpoint_root", type=str, default="")
+    parser.add_argument("--log_root", type=str, default="")
+    parser.add_argument("--prediction_root", type=str, default="")
+    parser.add_argument("--report_root", type=str, default="")
     return parser.parse_args()
 
 
@@ -89,13 +93,27 @@ def resolve_project_path(value: str) -> Path:
     return PROJECT_ROOT / path
 
 
-def run_output_dirs(run_name: str) -> Tuple[Path, Path, Path]:
-    run_name = run_name.strip() or "as_oct_pod1_clean_resnet18"
-    return CHECKPOINT_DIR / run_name, LOG_DIR / run_name, PREDICTION_DIR / run_name
+def run_output_dirs(args: argparse.Namespace) -> Tuple[Path, Path, Path]:
+    run_name = args.run_name.strip() or "as_oct_pod1_clean_resnet18"
+    if args.checkpoint_root:
+        checkpoint_dir = resolve_project_path(args.checkpoint_root) / run_name
+    else:
+        checkpoint_dir = CHECKPOINT_DIR / run_name
+    if args.log_root:
+        log_dir = resolve_project_path(args.log_root) / run_name
+    else:
+        log_dir = LOG_DIR / run_name
+    if args.prediction_root:
+        prediction_dir = resolve_project_path(args.prediction_root) / run_name
+    else:
+        prediction_dir = PREDICTION_DIR / run_name
+    return checkpoint_dir, log_dir, prediction_dir
 
 
-def run_report_dir(run_name: str) -> Path:
-    run_name = run_name.strip() or "as_oct_pod1_clean_resnet18"
+def run_report_dir(args: argparse.Namespace) -> Path:
+    run_name = args.run_name.strip() or "as_oct_pod1_clean_resnet18"
+    if args.report_root:
+        return resolve_project_path(args.report_root) / run_name
     return REPORT_DIR / run_name
 
 
@@ -535,8 +553,8 @@ def main() -> None:
     )
     criterion = nn.MSELoss()
 
-    checkpoint_dir, log_dir, prediction_dir = run_output_dirs(args.run_name)
-    report_dir = run_report_dir(args.run_name)
+    checkpoint_dir, log_dir, prediction_dir = run_output_dirs(args)
+    report_dir = run_report_dir(args)
     latest_path = checkpoint_dir / "latest.pth"
     best_path = checkpoint_dir / "best.pth"
     log_path = log_dir / "train_log.csv"

@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{Repeated patient-level split stability with fixed model seed 42.}
+\label{tab:repeated_stability}
+\begin{tabular}{lrrrr}
+\toprule
+Model & MAE mean $\pm$ SD & MAE range & RMSE mean $\pm$ SD & Range ratio \\
+\midrule
+Measurement RF & 163.15 $\pm$ 14.09 & 144.52--181.83 & 219.97 $\pm$ 19.24 & 0.37 $\pm$ 0.04 \\
+Corrected AS-OCT & 168.31 $\pm$ 13.41 & 150.09--184.50 & 224.83 $\pm$ 20.09 & 0.33 $\pm$ 0.09 \\
+Fusion & 171.35 $\pm$ 12.15 & 158.04--184.65 & 232.98 $\pm$ 17.05 & 0.35 $\pm$ 0.07 \\
+\bottomrule
+\end{tabular}
+\footnotesize Repeated evaluation uses five patient-level split seeds (42, 1001, 2002, 2026, 3407) and fixed model seed 42 for AS-OCT and fusion.
+\end{table}

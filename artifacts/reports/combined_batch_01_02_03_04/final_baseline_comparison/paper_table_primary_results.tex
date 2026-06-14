@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{Primary split baseline performance.}
+\label{tab:primary_baselines}
+\begin{tabular}{lrrrr}
+\toprule
+Model & MAE & RMSE & $R^2$ & Range ratio \\
+\midrule
+Measurement RF & 169.44 & 227.50 & 0.24 & 0.34 \\
+Corrected AS-OCT & 178.46 & 242.82 & 0.12 & 0.31 \\
+Fusion & 182.80 & 241.87 & 0.14 & 0.32 \\
+\bottomrule
+\end{tabular}
+\footnotesize Primary results report the seed42 split; AS-OCT and fusion primary rows use three-seed ensembles, whereas measurement-only reports the selected Random Forest baseline.
+\end{table}

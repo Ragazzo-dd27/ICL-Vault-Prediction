@@ -1,0 +1,7 @@
+model,bias_metric,proportion,std
+Measurement RF,Low-vault overestimation,0.9448916408668729,0.037370357590108746
+Measurement RF,High-vault underestimation,1.0,0.0
+Corrected AS-OCT,Low-vault overestimation,0.9573099415204679,0.044228468774711205
+Corrected AS-OCT,High-vault underestimation,0.975,0.055901699437494734
+Fusion,Low-vault overestimation,0.9424148606811145,0.05888867176773013
+Fusion,High-vault underestimation,0.9777777777777779,0.04969039949999535

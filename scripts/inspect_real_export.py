@@ -111,7 +111,7 @@ def normalize_eye(value: str) -> str:
 
 def detect_is_2d_analysis(path: Path) -> bool:
     joined = " ".join(part.lower() for part in path.parts)
-    return any(keyword in joined for keyword in ("2danalysis", "2d_analysis", "2d", "analysis"))
+    return any(keyword in joined for keyword in ("2danalysis", "2d_analysis", "2d analysis"))
 
 
 def classify_ubm_orientation(path: Path) -> str:
@@ -156,8 +156,30 @@ def parse_oct_metadata(path: Path) -> Dict[str, str]:
     }
 
 
+def resolve_patient_root(raw_root: Path) -> Path:
+    """Support exports with either patient folders directly or under patient/."""
+
+    direct_patient_dirs = [
+        path for path in raw_root.iterdir() if path.is_dir() and PATIENT_UID_PREFIX_PATTERN.match(path.name)
+    ]
+    if direct_patient_dirs:
+        return raw_root
+
+    for container_name in ("patient", "patients"):
+        container = raw_root / container_name
+        if container.is_dir():
+            nested_patient_dirs = [
+                path for path in container.iterdir() if path.is_dir() and PATIENT_UID_PREFIX_PATTERN.match(path.name)
+            ]
+            if nested_patient_dirs:
+                return container
+
+    return raw_root
+
+
 def iter_patient_dirs(raw_root: Path) -> List[Path]:
-    return sorted(path for path in raw_root.iterdir() if path.is_dir())
+    patient_root = resolve_patient_root(raw_root)
+    return sorted(path for path in patient_root.iterdir() if path.is_dir())
 
 
 def warn_if_common_patient_dir_typo(raw_root: Path) -> None:
@@ -309,11 +331,17 @@ def build_summary_rows(patient_records: List[ImageRecord], manifest_rows: List[D
         num_ubm_horizontal_images = sum(record.modality == "ubm_horizontal" for record in records)
         num_ubm_vertical_images = sum(record.modality == "ubm_vertical" for record in records)
         num_ubm_unknown_images = sum(record.modality == "ubm_unknown" for record in records)
+        detected_eyes = sorted(
+            eye for eye in patient_manifest["eye"].dropna().astype(str).unique().tolist() if eye in {"OD", "OS"}
+        ) if not patient_manifest.empty and "eye" in patient_manifest.columns else []
 
         summary_rows.append(
             {
                 "patient_uid": patient_uid,
                 "source_patient_folder": source_folder,
+                "detected_eyes": join_paths(detected_eyes),
+                "num_detected_eyes": len(detected_eyes),
+                "one_eye_only": len(detected_eyes) == 1,
                 "num_all_images": len(records),
                 "num_oct_raw_images": num_oct_raw_images,
                 "num_oct_2d_analysis_images": num_oct_2d_images,
@@ -494,12 +522,13 @@ def main() -> None:
     if not raw_root.exists():
         raise FileNotFoundError(f"Raw export root does not exist: {raw_root}")
     warn_if_common_patient_dir_typo(raw_root)
+    patient_root = resolve_patient_root(raw_root)
 
     patient_dirs = iter_patient_dirs(raw_root)
     patient_records: List[ImageRecord] = []
     for index, patient_dir in enumerate(patient_dirs, start=1):
         patient_uid = assign_patient_uid(patient_dir.name, index)
-        patient_records.extend(gather_patient_records(patient_dir=patient_dir, patient_uid=patient_uid, raw_root=raw_root))
+        patient_records.extend(gather_patient_records(patient_dir=patient_dir, patient_uid=patient_uid, raw_root=patient_root))
 
     manifest_rows = build_manifest_rows(patient_records)
     summary_rows = build_summary_rows(patient_records, manifest_rows)
@@ -532,6 +561,9 @@ def main() -> None:
         columns=[
             "patient_uid",
             "source_patient_folder",
+            "detected_eyes",
+            "num_detected_eyes",
+            "one_eye_only",
             "num_all_images",
             "num_oct_raw_images",
             "num_oct_2d_analysis_images",

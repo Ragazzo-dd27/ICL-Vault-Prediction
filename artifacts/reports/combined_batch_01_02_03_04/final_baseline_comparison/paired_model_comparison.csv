@@ -1,0 +1,16 @@
+comparison,split_seed,model_a,model_b,delta_MAE,winner,model_a_win_count,model_b_win_count,tie_count,paired_delta_mean,paired_delta_std,note
+AS-OCT vs RF,42,Corrected AS-OCT,Measurement RF,15.060280957398192,Measurement RF,1,4,0,5.1648798534187845,7.42918736249543,Descriptive paired comparison across five splits; no significance claim.
+AS-OCT vs RF,1001,Corrected AS-OCT,Measurement RF,4.875862493419106,Measurement RF,1,4,0,5.1648798534187845,7.42918736249543,Descriptive paired comparison across five splits; no significance claim.
+AS-OCT vs RF,2002,Corrected AS-OCT,Measurement RF,5.57396596622965,Measurement RF,1,4,0,5.1648798534187845,7.42918736249543,Descriptive paired comparison across five splits; no significance claim.
+AS-OCT vs RF,2026,Corrected AS-OCT,Measurement RF,6.175725976708094,Measurement RF,1,4,0,5.1648798534187845,7.42918736249543,Descriptive paired comparison across five splits; no significance claim.
+AS-OCT vs RF,3407,Corrected AS-OCT,Measurement RF,-5.861436126661118,Corrected AS-OCT,1,4,0,5.1648798534187845,7.42918736249543,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs RF,42,Fusion,Measurement RF,11.072540829608755,Measurement RF,1,4,0,8.199785147870363,10.982852793116983,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs RF,1001,Fusion,Measurement RF,2.4345727671733073,Measurement RF,1,4,0,8.199785147870363,10.982852793116983,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs RF,2002,Fusion,Measurement RF,14.81088384876216,Measurement RF,1,4,0,8.199785147870363,10.982852793116983,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs RF,2026,Fusion,Measurement RF,20.311524373268213,Measurement RF,1,4,0,8.199785147870363,10.982852793116983,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs RF,3407,Fusion,Measurement RF,-7.6305960794606165,Fusion,1,4,0,8.199785147870363,10.982852793116983,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs AS-OCT,42,Fusion,Corrected AS-OCT,-3.9877401277894364,Fusion,3,2,0,3.034905294451579,8.125270631465671,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs AS-OCT,1001,Fusion,Corrected AS-OCT,-2.441289726245799,Fusion,3,2,0,3.034905294451579,8.125270631465671,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs AS-OCT,2002,Fusion,Corrected AS-OCT,9.23691788253251,Corrected AS-OCT,3,2,0,3.034905294451579,8.125270631465671,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs AS-OCT,2026,Fusion,Corrected AS-OCT,14.13579839656012,Corrected AS-OCT,3,2,0,3.034905294451579,8.125270631465671,Descriptive paired comparison across five splits; no significance claim.
+Fusion vs AS-OCT,3407,Fusion,Corrected AS-OCT,-1.7691599527994981,Fusion,3,2,0,3.034905294451579,8.125270631465671,Descriptive paired comparison across five splits; no significance claim.
