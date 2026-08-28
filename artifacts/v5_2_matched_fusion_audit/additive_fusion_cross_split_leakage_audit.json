@@ -1,0 +1,132 @@
+{
+  "formal_split_seeds": [
+    42,
+    1001,
+    2002,
+    2026,
+    3407
+  ],
+  "global_alpha": 0.35,
+  "alpha_semantics": "measurement_weight",
+  "resolved_formula": "pred_additive = 0.35 * pred_measurement + 0.65 * pred_as_oct",
+  "pooled_validation_source": {
+    "script": "scripts/audit_v5_2_matched_fusion_interaction.py",
+    "function": "additive_alpha_search",
+    "loader_function": "load_matched_validation",
+    "measurement_validation_predictions": "artifacts/v5_2_matched_unimodal/measurement/measurement_matched_validation_predictions.csv",
+    "as_oct_validation_predictions": "artifacts/v5_2_matched_unimodal/as_oct/as_oct_matched_validation_predictions.csv",
+    "selection_artifact": "artifacts/v5_2_matched_fusion_audit/additive_fusion_validation_search.csv",
+    "frozen_alpha_artifact": "artifacts/v5_2_matched_fusion_audit/additive_fusion_frozen_alpha.json",
+    "pooling_level": "eye-row appearances across split_seed validation sets",
+    "validation_rows_total": 280,
+    "validation_rows_per_seed": {
+      "42": 56,
+      "1001": 56,
+      "2002": 56,
+      "2026": 56,
+      "3407": 56
+    },
+    "unique_validation_patients": 111,
+    "unique_validation_eyes": 204,
+    "duplicated_validation_patient_appearances_across_seeds": 39,
+    "duplicated_validation_eye_appearances_across_seeds": 76,
+    "direct_test_rows_read_by_alpha_search": false
+  },
+  "same_split_val_test_overlap": {
+    "42": {
+      "patient_overlap": 0,
+      "eye_overlap": 0
+    },
+    "1001": {
+      "patient_overlap": 0,
+      "eye_overlap": 0
+    },
+    "2002": {
+      "patient_overlap": 0,
+      "eye_overlap": 0
+    },
+    "2026": {
+      "patient_overlap": 0,
+      "eye_overlap": 0
+    },
+    "3407": {
+      "patient_overlap": 0,
+      "eye_overlap": 0
+    }
+  },
+  "test_vs_pooled_validation_overlap_per_split": [
+    {
+      "split_seed": 42,
+      "n_test_patients": 30,
+      "n_test_eyes": 56,
+      "n_test_patients_seen_in_pooled_validation": 12,
+      "n_test_eyes_seen_in_pooled_validation": 21,
+      "patient_overlap_fraction": 0.4,
+      "eye_overlap_fraction": 0.375
+    },
+    {
+      "split_seed": 1001,
+      "n_test_patients": 30,
+      "n_test_eyes": 56,
+      "n_test_patients_seen_in_pooled_validation": 12,
+      "n_test_eyes_seen_in_pooled_validation": 24,
+      "patient_overlap_fraction": 0.4,
+      "eye_overlap_fraction": 0.42857142857142855
+    },
+    {
+      "split_seed": 2002,
+      "n_test_patients": 30,
+      "n_test_eyes": 56,
+      "n_test_patients_seen_in_pooled_validation": 13,
+      "n_test_eyes_seen_in_pooled_validation": 24,
+      "patient_overlap_fraction": 0.43333333333333335,
+      "eye_overlap_fraction": 0.42857142857142855
+    },
+    {
+      "split_seed": 2026,
+      "n_test_patients": 30,
+      "n_test_eyes": 56,
+      "n_test_patients_seen_in_pooled_validation": 15,
+      "n_test_eyes_seen_in_pooled_validation": 27,
+      "patient_overlap_fraction": 0.5,
+      "eye_overlap_fraction": 0.48214285714285715
+    },
+    {
+      "split_seed": 3407,
+      "n_test_patients": 30,
+      "n_test_eyes": 56,
+      "n_test_patients_seen_in_pooled_validation": 18,
+      "n_test_eyes_seen_in_pooled_validation": 35,
+      "patient_overlap_fraction": 0.6,
+      "eye_overlap_fraction": 0.625
+    }
+  ],
+  "audit_status": "CROSS-SPLIT_ROLE_CONTAMINATION_DETECTED",
+  "global_alpha_protocol_clean": false,
+  "existing_nested_protocol_found": true,
+  "existing_nested_protocol": {
+    "paths": [
+      "scripts/run_v5_2_gate_learnability_diagnostic.py",
+      "docs/experiments/v5_2_gate_learnability_diagnostic_report.md",
+      "artifacts/v5_2_final_summary/v5_2_gate_summary.csv"
+    ],
+    "protocol": "validation-only patient-grouped nested cross-validation within outer validation split; alpha selected on training folds only and evaluated out-of-fold on held validation folds",
+    "test_evaluation_independent": true,
+    "stored_result": "Nested fixed alpha OOF MAE = 164.10 +/- 23.28 um",
+    "is_formal_outer_test_additive_result": false
+  },
+  "existing_formal_outer_test_per_split_alpha_protocol_found": false,
+  "recommended_correction": {
+    "execute_in_this_audit": false,
+    "protocol": [
+      "For each outer split independently, use only that split's validation predictions and labels.",
+      "Use the original alpha grid [0.0, 0.05, ..., 1.0].",
+      "Use the resolved Measurement-weight formula alpha * Measurement + (1 - alpha) * AS-OCT.",
+      "Select alpha by validation MAE using a pre-declared tie rule.",
+      "Freeze the split-specific alpha.",
+      "Evaluate only on that split's test set.",
+      "Use existing unimodal predictions only; no model training or inference."
+    ]
+  },
+  "patient_identifiers_included": false
+}
