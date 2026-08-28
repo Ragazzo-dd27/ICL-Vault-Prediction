@@ -1,0 +1,260 @@
+{
+  "registry_name": "frozen_result_registry_after_leakage_safe_fusion",
+  "created_for": "final evidence freeze before manuscript rewrite",
+  "manuscript_modified": false,
+  "models_trained": false,
+  "inference_run": false,
+  "authoritative_sources": {
+    "full_cohort_v5_ranking": "artifacts/v5_overall_comparison/v5_model_ranking_summary.csv",
+    "full_cohort_v5_formal_summary": "artifacts/v5_1_final_summary/v5_1_formal_experiment_summary.csv",
+    "leakage_safe_additive_archive": "artifacts/v5_2_matched_fusion_audit/additive_fusion_leakage_safe_formal/",
+    "corrected_g2_archive": "artifacts/reports/v5_2_matched_fusion_audit/reliability_aware_gate_multiview_v1_formal_corrected/",
+    "gate_learnability_summary": "artifacts/v5_2_final_summary/v5_2_gate_summary.csv",
+    "alpha_semantics_resolution": "artifacts/v5_2_matched_fusion_audit/alpha_semantics_resolution.json",
+    "cross_split_leakage_audit": "artifacts/v5_2_matched_fusion_audit/additive_fusion_cross_split_leakage_audit.json"
+  },
+  "full_cohort_primary_baselines": [
+    {
+      "method": "Measurement-only RF",
+      "cohort": "full v5 measurement cohort",
+      "split_protocol": "repeated patient-level splits",
+      "deployable": true,
+      "role": "primary baseline",
+      "formal_status": "formal",
+      "repeated_mae_mean_um": 172.78988760549964,
+      "repeated_mae_std_um": 22.382905521203885,
+      "primary_split_mae_um": 200.7901712038953,
+      "prediction_range_ratio": 0.5103401688623055
+    },
+    {
+      "method": "AS-OCT-only V0",
+      "cohort": "full v5 AS-OCT cohort",
+      "split_protocol": "repeated patient-level splits",
+      "deployable": true,
+      "role": "primary baseline",
+      "formal_status": "formal",
+      "repeated_mae_mean_um": 173.78341064453124,
+      "repeated_mae_std_um": 15.768142645750386,
+      "primary_split_mae_um": 175.004442117982,
+      "prediction_range_ratio": 0.4568027175286364
+    },
+    {
+      "method": "Simple concat fusion",
+      "cohort": "full v5 fusion cohort",
+      "split_protocol": "repeated patient-level splits",
+      "deployable": true,
+      "role": "naive multimodal baseline",
+      "formal_status": "formal",
+      "repeated_mae_mean_um": 175.78664343697682,
+      "repeated_mae_std_um": 23.14866213580686,
+      "primary_split_mae_um": 193.49680709838867,
+      "prediction_range_ratio": 0.4018383556871221
+    }
+  ],
+  "matched_repeated_split_results": [
+    {
+      "method": "Measurement RF",
+      "deployable": true,
+      "role": "primary unimodal baseline",
+      "formal_status": "formal",
+      "cohort": "matched v5.2 test eyes",
+      "split_protocol": "five repeated patient-level outer splits",
+      "mae_mean_um": 172.0785719209461,
+      "mae_std_um": 23.352839741173295,
+      "wins_vs_matched_best_unimodal": "0/5"
+    },
+    {
+      "method": "AS-OCT V0",
+      "deployable": true,
+      "role": "primary unimodal baseline",
+      "formal_status": "formal",
+      "cohort": "matched v5.2 test eyes",
+      "split_protocol": "five repeated patient-level outer splits",
+      "mae_mean_um": 179.97709971836633,
+      "mae_std_um": 25.57945041554526,
+      "wins_vs_matched_best_unimodal": "0/5"
+    },
+    {
+      "method": "Concat fusion",
+      "deployable": true,
+      "role": "naive fusion baseline",
+      "formal_status": "formal",
+      "cohort": "matched v5.2 test eyes",
+      "split_protocol": "five repeated patient-level outer splits",
+      "mae_mean_um": 175.78664343697682,
+      "mae_std_um": 23.14866213580686,
+      "wins_vs_matched_best_unimodal": "0/5"
+    },
+    {
+      "method": "Leakage-safe validation-tuned additive fusion",
+      "deployable": true,
+      "role": "simple conventional fusion baseline / supporting method",
+      "formal_status": "formal",
+      "cohort": "matched v5.2 test eyes",
+      "split_protocol": "per-split validation-only alpha selection, then held-out test evaluation",
+      "formula": "pred_additive = alpha * Measurement + (1 - alpha) * AS-OCT",
+      "alpha_semantics": "Measurement weight",
+      "mae_mean_um": 171.94182048895058,
+      "mae_std_um": 20.217775268424813,
+      "wins_vs_matched_best_unimodal": "3/5",
+      "wins_vs_concat": "4/5",
+      "wins_vs_g2": "3/5",
+      "selected_measurement_alpha_by_split": {
+        "42": 0.9,
+        "1001": 0.55,
+        "2002": 0.05,
+        "2026": 0.4,
+        "3407": 0.05
+      }
+    },
+    {
+      "method": "G2 reliability-aware soft gate",
+      "deployable": true,
+      "recommended_as_final_predictor": false,
+      "role": "adaptive fusion learnability diagnostic",
+      "formal_status": "formal corrected, NO-GO",
+      "cohort": "matched v5.2 test eyes",
+      "split_protocol": "gate fit on same-split validation only, held-out test evaluation",
+      "mae_mean_um": 171.8369957407255,
+      "mae_std_um": 28.639685188203078,
+      "wins_vs_matched_best_unimodal": "1/5",
+      "wins_vs_corrected_fixed_additive_in_g2_archive": "2/5"
+    },
+    {
+      "method": "Matched best unimodal",
+      "deployable": false,
+      "role": "diagnostic benchmark",
+      "formal_status": "formal diagnostic",
+      "definition": "For each outer split, post-hoc choose the unimodal model with lower split-level test MAE.",
+      "mae_mean_um": 170.0176756232005,
+      "mae_std_um": 23.525527089388138
+    },
+    {
+      "method": "Oracle Best-of-Two",
+      "deployable": false,
+      "role": "retrospective theoretical diagnostic",
+      "formal_status": "formal diagnostic",
+      "definition": "For each test eye, post-hoc choose the unimodal prediction with lower absolute error.",
+      "mae_mean_um": 132.4493792907567,
+      "mae_std_um": 26.10865900949059
+    }
+  ],
+  "vault_range_results_matched_mean": {
+    "measurement_rf": {
+      "low_mae_um": 341.205736957672,
+      "medium_mae_um": 129.55843892555848,
+      "high_mae_um": 309.2686139589984
+    },
+    "as_oct_v0": {
+      "low_mae_um": 297.1917073567708,
+      "medium_mae_um": 122.75574124845858,
+      "high_mae_um": 369.0549208383712
+    },
+    "concat": {
+      "low_mae_um": 255.61622721354166,
+      "medium_mae_um": 127.08011991284941,
+      "high_mae_um": 333.1640602475121
+    },
+    "leakage_safe_additive": {
+      "low_mae_um": 315.46577289150855,
+      "medium_mae_um": 122.07046145079494,
+      "high_mae_um": 345.27785805179167
+    },
+    "g2": {
+      "low_mae_um": 295.6098097502919,
+      "medium_mae_um": 117.71856169519644,
+      "high_mae_um": 351.9799756530393
+    },
+    "oracle_best_of_two": {
+      "high_mae_um": 277.7218435120814
+    }
+  },
+  "range_compression_matched_mean": {
+    "measurement_rf": {
+      "prediction_range_ratio": 0.5047657939882599,
+      "prediction_sd_to_target_sd": 0.47739560745272264
+    },
+    "as_oct_v0": {
+      "prediction_range_ratio": 0.3673574332347913,
+      "prediction_sd_to_target_sd": 0.3603203415580455
+    },
+    "concat": {
+      "prediction_range_ratio": 0.401838355687122,
+      "prediction_sd_to_target_sd": 0.4235534283802337
+    },
+    "leakage_safe_additive": {
+      "prediction_range_ratio": 0.3873808319329412,
+      "prediction_sd_to_target_sd": 0.36417054859119913
+    },
+    "g2": {
+      "prediction_range_ratio": 0.4023771631212448,
+      "prediction_sd_to_target_sd": 0.38213618052612874
+    }
+  },
+  "oracle_complementarity": {
+    "oracle_best_of_two_mae_mean_um": 132.4493792907567,
+    "oracle_best_of_two_mae_std_um": 26.10865900949059,
+    "oracle_high_vault_mae_um": 277.7218435120814,
+    "leakage_safe_additive_mean_oracle_fraction_captured": -0.04981415454129047,
+    "leakage_safe_additive_median_oracle_fraction_captured": 0.05472281829499722
+  },
+  "gate_diagnostics": {
+    "g0_prediction_only": {
+      "winner_auc_mean": 0.5214294929138532,
+      "winner_auc_std": 0.0693652396239181,
+      "oof_mae_mean_um": 163.8769547266145,
+      "oof_mae_std_um": 22.46226316099267,
+      "wins_vs_nested_fixed_alpha": "2/5",
+      "oracle_fraction_captured": -0.0927699732228787,
+      "decision": "NO-GO"
+    },
+    "g1_prediction_plus_measurements": {
+      "winner_auc_mean": 0.456326818484475,
+      "winner_auc_std": 0.1071907201577196,
+      "oof_mae_mean_um": 165.76872176566766,
+      "oof_mae_std_um": 21.2016302728326,
+      "wins_vs_nested_fixed_alpha": "1/5",
+      "oracle_fraction_captured": -0.1599108824439195,
+      "decision": "NO-GO"
+    },
+    "g2_reliability_aware_soft_gate": {
+      "mae_mean_um": 171.8369957407255,
+      "mae_std_um": 28.639685188203078,
+      "wins_vs_matched_best_unimodal": "1/5",
+      "wins_vs_corrected_fixed_additive_in_g2_archive": "2/5",
+      "leakage_safe_additive_beats_g2": "3/5",
+      "high_vault_mae_um": 351.9799756530393,
+      "mean_extreme_alpha_fraction": 0.825,
+      "coefficient_stability": "mixed signs across repeated splits for all gate features",
+      "decision": "NO-GO"
+    }
+  },
+  "invalidated_or_superseded_results": [
+    {
+      "result": "pooled global alpha result, 167.91 +/- 24.56 um",
+      "reason": "pooled cross-split validation-selected global alpha; cross-split role contamination detected",
+      "manuscript_status": "DO NOT USE IN MANUSCRIPT as formal repeated-test evidence"
+    },
+    {
+      "result": "0.35 * AS-OCT + 0.65 * Measurement fixed-additive comparator",
+      "reason": "alpha semantic inversion; frozen alpha means Measurement weight",
+      "manuscript_status": "DO NOT USE IN MANUSCRIPT"
+    },
+    {
+      "result": "provisional additive paper-readiness audits before alpha/leakage resolution",
+      "reason": "superseded by formal semantic resolution and leakage-safe correction",
+      "manuscript_status": "DO NOT USE IN MANUSCRIPT"
+    },
+    {
+      "result": "old uncorrected G2 fixed-additive comparator outputs",
+      "reason": "propagated fixed-additive alpha semantic inversion",
+      "manuscript_status": "DO NOT USE IN MANUSCRIPT"
+    }
+  ],
+  "paper_readiness": {
+    "additive_role": "simple conventional fusion baseline / supporting fusion result",
+    "decision": "B. PAPER-READY SUPPORTING METHOD, NOT STRONG ENOUGH AS CORE NOVELTY",
+    "recommended_positioning": "Matched multimodal fusion and complementarity analysis for early ICL vault prediction",
+    "not_a_novel_fusion_method_paper": true
+  }
+}

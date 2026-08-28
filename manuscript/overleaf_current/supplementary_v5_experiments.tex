@@ -1,0 +1,169 @@
+\section{Frozen v5 Reference Results}
+
+\begin{table}[!htbp]
+\centering
+\caption{Frozen v5 cohort composition.}
+\label{tab:supp_v5_cohort}
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrrr}
+\toprule
+Setting & Eyes & Patients & Low & Medium & High \\
+\midrule
+AS-OCT-only & 392 & 208 & 11 & 289 & 92 \\
+Measurement-only & 373 & 201 & 11 & 273 & 89 \\
+Fusion & 372 & 201 & 11 & 272 & 89 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{Frozen v5 primary and repeated patient-level results.}
+\label{tab:supp_v5_main}
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+Model & Primary MAE & Primary RMSE & Primary $R^2$ & Repeated MAE \\
+\midrule
+Measurement-only RF & 200.79 & 247.53 & 0.194 & $172.79 \pm 22.38$ \\
+AS-OCT ensemble & 175.00 & 217.19 & -0.011 & $173.78 \pm 15.77$ \\
+Concat fusion ensemble & 193.50 & 254.60 & 0.148 & $175.79 \pm 23.15$ \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\section{v5.1 Validation-Only Screening}
+
+Stage A was restricted to training and validation data. V1 applied a fixed automatic non-black ROI crop to the selected single AS-OCT view. V2 used all quality-controlled preoperative views, a shared ImageNet-pretrained ResNet18, and eye-level mean feature pooling. V3 retained multi-view mean pooling and introduced a label-distribution-smoothed weighted Huber objective. Model selection used validation metrics only.
+
+\begin{table}[!htbp]
+\centering
+\caption{Validation-only v5.1 image screening. These values are not formal test results.}
+\label{tab:supp_v51_screening}
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrl}
+\toprule
+Variant & Validation MAE & High-vault MAE & Range ratio & Outcome \\
+\midrule
+V1 ROI single-view & $164.51 \pm 5.92$ & 284.03 & 0.421 & Not advanced \\
+V2 multi-view mean pooling & $158.05 \pm 8.75$ & 282.42 & 0.467 & Supported V3 exploration \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\section{v5.1 Formal Exploratory Evaluation}
+
+\begin{table*}[!t]
+\centering
+\caption{Formal v5.1 exploratory results. No variant replaced a frozen v5 baseline.}
+\label{tab:supp_v51_formal}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrl}
+\toprule
+Method & Input / strategy & Primary MAE & Repeated MAE & High MAE & Wins & Interpretation \\
+\midrule
+Frozen measurement RF & Five CASIA2 measurements & 200.79 & $172.79 \pm 22.38$ & -- & Reference & Main baseline \\
+ExtraTrees & Same five measurements & 204.06 & $171.71 \pm 23.60$ & 296.84 & 1/5 vs RF & No stable gain \\
+Frozen AS-OCT V0 & Selected single AS-OCT view & 175.00 & $173.78 \pm 15.77$ & 315.66 & Reference & Main baseline \\
+V3 & Multi-view + LDS-Huber & 172.71 & $179.96 \pm 20.54$ & 288.05 & 2/5 vs V0 & Better tail coverage, worse overall \\
+V0+V3 & Validation-tuned convex ensemble & 169.97 & $175.18 \pm 17.73$ & 296.77 & 2/5 vs V0 & Primary gain only \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+
+\begin{table}[!htbp]
+\centering
+\caption{v5.1 range-coverage trade-off relative to the relevant frozen baseline.}
+\label{tab:supp_v51_range}
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrl}
+\toprule
+Method & Repeated MAE & High MAE & $\Delta$ range ratio & Success \\
+\midrule
+ExtraTrees & $171.71 \pm 23.60$ & 296.84 & -- & No \\
+V3 & $179.96 \pm 20.54$ & 288.05 & +0.118 & No \\
+V0+V3 & $175.18 \pm 17.73$ & 296.77 & +0.046 & No \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/fig_v5_1_ablation.pdf}
+\caption{v5.1 ablation summary. Frozen baselines are distinguished from exploratory variants.}
+\label{fig:supp_v51_ablation}
+\end{figure*}
+
+\section{v5.2 Matched Interaction Analysis}
+
+Measurement RF and AS-OCT V0 were evaluated on the same frozen fusion cohort and fusion patient-level splits. Predictions were aligned using split seed, sample identifier, patient identifier, eye, split, and ground-truth vault. Strict three-way coverage with existing concat predictions was 280/280 test eyes. Leakage-safe additive fusion used outer-split-specific validation-only Measurement weights of 0.90, 0.55, 0.05, 0.40, and 0.05 for split seeds 42, 1001, 2002, 2026, and 3407, respectively, with
+\[
+\hat{y}^{add}_{i,s}=\alpha_s \hat{y}^{M}_{i,s}+(1-\alpha_s)\hat{y}^{O}_{i,s}.
+\]
+The previous pooled-validation global-alpha diagnostic is superseded and is not used as a formal held-out repeated-test result.
+
+\begin{table}[!htbp]
+\centering
+\caption{Strict matched v5.2 repeated-split interaction analysis. Matched best unimodal is a retrospective split-level diagnostic; Oracle Best-of-Two is a retrospective non-deployable per-eye diagnostic.}
+\label{tab:supp_v52_interaction}
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrl}
+\toprule
+Method & Repeated MAE & Wins vs matched best & Interpretation \\
+\midrule
+Measurement RF & $172.08 \pm 23.35$ & 0/5 & Deployable matched unimodal \\
+AS-OCT V0 & $179.98 \pm 25.58$ & 0/5 & Deployable matched unimodal \\
+Concat fusion & $175.79 \pm 23.15$ & 0/5 & Conventional fusion; no stable gain \\
+Leakage-safe additive fusion & $171.94 \pm 20.22$ & 3/5 & Validation-only late fusion; not robustly superior \\
+G2 reliability-aware gate & $171.84 \pm 28.64$ & 1/5 & Corrected adaptive diagnostic; NO-GO \\
+Matched best unimodal & $170.02 \pm 23.53$ & Reference & Retrospective split-level diagnostic \\
+Oracle Best-of-Two & $132.45 \pm 26.11$ & Diagnostic & Retrospective per-eye diagnostic \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\section{Gate Learnability Diagnostic}
+
+Within each outer validation split, patient-grouped nested cross-validation generated out-of-fold gate probabilities. G0 used prediction-only features; G1 added the five preoperative measurements. True vault range and ground-truth errors were never used as gate inputs.
+
+\begin{table}[!htbp]
+\centering
+\caption{Nested gate-learnability diagnostic. Delta is relative to nested fixed alpha; negative values denote lower MAE.}
+\label{tab:supp_v52_gate}
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrrl}
+\toprule
+Feature set & Winner AUC & OOF MAE & Delta & Wins & Decision \\
+\midrule
+G0 prediction-only & $0.521 \pm 0.069$ & $163.88 \pm 22.46$ & -0.22 & 2/5 & NO-GO \\
+G1 prediction + measurements & $0.456 \pm 0.107$ & $165.77 \pm 21.20$ & +1.67 & 1/5 & NO-GO \\
+Nested fixed alpha & -- & $164.10 \pm 23.28$ & 0.00 & -- & Reference \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/fig_v5_2_multimodal_diagnostic.pdf}
+\caption{Matched multimodal and gate diagnostics. Oracle performance is a retrospective theoretical lower bound, not a deployable model result.}
+\label{fig:supp_v52_diagnostic}
+\end{figure*}
+
+\section{Additional Interpretation}
+
+The v5.1 experiments show that better high-vault coverage can trade against overall repeated-split accuracy. The v5.2 analysis shows substantial retrospective oracle headroom but weak prospective gate learnability. Together, these diagnostic results support the main manuscript interpretation that retrospective complementarity exists, but the evaluated conventional and adaptive fusion strategies did not robustly exploit it under the current input setting. Further development should prioritize evaluating ICL size, ICL model, implantation orientation, ICL power, WTW, axial length, lens thickness, keratometry, and refractive variables rather than additional tuning on the same inputs.
